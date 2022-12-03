@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from tensorflow.keras import layers
 
+
 def spice(sigma, w_tempo, w_recon):
     encoder_filter = 64
     decoder_filter = 32
@@ -12,32 +13,56 @@ def spice(sigma, w_tempo, w_recon):
     batch_size = 64
     padding = "same"
 
-    x1 = layers.Input(shape=(128,1))
-    x2 = layers.Input(shape=(128,1))
+    x1 = layers.Input(shape=(128, 1))
+    x2 = layers.Input(shape=(128, 1))
     k1 = layers.Input(shape=(1))
     k2 = layers.Input(shape=(1))
 
-    conv1 = layers.Conv1D(encoder_filter, kernel_size, strides, padding=padding)
+    conv1 = layers.Conv1D(
+        encoder_filter,
+        kernel_size,
+        strides,
+        padding=padding)
     bn1 = layers.BatchNormalization()
     relu1 = layers.ReLU()
     mp1 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    conv2 = layers.Conv1D(encoder_filter*2, kernel_size, strides, padding=padding)
+    conv2 = layers.Conv1D(
+        encoder_filter * 2,
+        kernel_size,
+        strides,
+        padding=padding)
     bn2 = layers.BatchNormalization()
     relu2 = layers.ReLU()
     mp2 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    conv3 = layers.Conv1D(encoder_filter*4, kernel_size, strides, padding=padding)
+    conv3 = layers.Conv1D(
+        encoder_filter * 4,
+        kernel_size,
+        strides,
+        padding=padding)
     bn3 = layers.BatchNormalization()
     relu3 = layers.ReLU()
     mp3 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    conv4 = layers.Conv1D(encoder_filter*8, kernel_size, strides, padding=padding)
+    conv4 = layers.Conv1D(
+        encoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding)
     bn4 = layers.BatchNormalization()
     relu4 = layers.ReLU()
     mp4 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    conv5 = layers.Conv1D(encoder_filter*8, kernel_size, strides, padding=padding)
+    conv5 = layers.Conv1D(
+        encoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding)
     bn5 = layers.BatchNormalization()
     relu5 = layers.ReLU()
     mp5 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    conv6 = layers.Conv1D(encoder_filter*8, kernel_size, strides, padding=padding)
+    conv6 = layers.Conv1D(
+        encoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding)
     bn6 = layers.BatchNormalization()
     relu6 = layers.ReLU()
     mp6 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
@@ -47,30 +72,50 @@ def spice(sigma, w_tempo, w_recon):
     phead_y = layers.Dense(1, activation="sigmoid")
 
     dense48 = layers.Dense(48)
-    reshape = layers.Reshape((48,1))
+    reshape = layers.Reshape((48, 1))
 
-    dtconv1 = layers.Conv1DTranspose(decoder_filter*8, kernel_size, strides, padding=padding)
+    dtconv1 = layers.Conv1DTranspose(
+        decoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding)
     dbn1 = layers.BatchNormalization()
     drelu1 = layers.ReLU()
     dmp1 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    dtconv2 = layers.Conv1DTranspose(decoder_filter*8, kernel_size, strides, padding=padding)
+    dtconv2 = layers.Conv1DTranspose(
+        decoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding)
     dbn2 = layers.BatchNormalization()
     drelu2 = layers.ReLU()
     dmp2 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    dtconv3 = layers.Conv1DTranspose(decoder_filter*8, kernel_size, strides, padding=padding)
+    dtconv3 = layers.Conv1DTranspose(
+        decoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding)
     dbn3 = layers.BatchNormalization()
     drelu3 = layers.ReLU()
     dmp3 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    dtconv4 = layers.Conv1DTranspose(decoder_filter*4, kernel_size, strides, padding=padding)
+    dtconv4 = layers.Conv1DTranspose(
+        decoder_filter * 4,
+        kernel_size,
+        strides,
+        padding=padding)
     dbn4 = layers.BatchNormalization()
     drelu4 = layers.ReLU()
     dmp4 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
-    dtconv5 = layers.Conv1DTranspose(decoder_filter*2, kernel_size, strides, padding=padding)
+    dtconv5 = layers.Conv1DTranspose(
+        decoder_filter * 2,
+        kernel_size,
+        strides,
+        padding=padding)
     dbn5 = layers.BatchNormalization()
     drelu5 = layers.ReLU()
     dmp5 = layers.MaxPool1D(pool_size=3, strides=2, padding=padding)
 
-    dreshape = layers.Reshape((128,1))
+    dreshape = layers.Reshape((128, 1))
 
     embd1 = conv1(x1)
     embd1 = relu1(embd1)
@@ -179,13 +224,16 @@ def spice(sigma, w_tempo, w_recon):
 
     model = tf.keras.Model([x1, x2, k1, k2], [xhat1, xhat2, y1, y2])
 
-    h = tf.keras.losses.Huber(delta=0.25*sigma, reduction="sum_over_batch_size")
+    h = tf.keras.losses.Huber(
+        delta=0.25 * sigma,
+        reduction="sum_over_batch_size")
 
-    e_t = K.abs((y1-y2) - sigma*(k2-k1))
+    e_t = K.abs((y1 - y2) - sigma * (k2 - k1))
 
-    loss_tempo = h(e_t, 0)*w_tempo
+    loss_tempo = h(e_t, 0) * w_tempo
     # https://math.stackexchange.com/questions/2690199/should-the-2-in-l-2-norm-notation-be-a-subscript-or-superscript
-    loss_recon = K.mean(K.mean(K.square(x1-xhat1) + K.square(x2-xhat2), axis=1))*w_recon
+    loss_recon = K.mean(K.mean(K.square(x1 - xhat1) +
+                        K.square(x2 - xhat2), axis=1)) * w_recon
 
     model.add_loss(loss_tempo)
     model.add_loss(loss_recon)
@@ -194,6 +242,7 @@ def spice(sigma, w_tempo, w_recon):
     model.add_metric(loss_recon, name="reconstruction_loss")
 
     return model
+
 
 def convolutional_autoencoder(sigma, w_tempo, w_recon):
     encoder_filter = 64
@@ -204,34 +253,99 @@ def convolutional_autoencoder(sigma, w_tempo, w_recon):
     activation = "relu"
     batch_size = 64
 
-    x1 = layers.Input(shape=(128,1))
-    x2 = layers.Input(shape=(128,1))
+    x1 = layers.Input(shape=(128, 1))
+    x2 = layers.Input(shape=(128, 1))
     k1 = layers.Input(shape=(1))
     k2 = layers.Input(shape=(1))
 
-    ## encoder
-    conv1 = layers.Conv1D(encoder_filter, kernel_size, strides, padding=padding, activation=activation)
-    conv2 = layers.Conv1D(encoder_filter*2, kernel_size, strides, padding=padding, activation=activation)
-    conv3 = layers.Conv1D(encoder_filter*4, kernel_size, strides, padding=padding, activation=activation)
-    conv4 = layers.Conv1D(encoder_filter*8, kernel_size, strides, padding=padding, activation=activation)
-    conv5 = layers.Conv1D(encoder_filter*8, kernel_size, strides, padding=padding, activation=activation)
-    conv6 = layers.Conv1D(encoder_filter*8, kernel_size, strides, padding=padding, activation=activation)
+    # encoder
+    conv1 = layers.Conv1D(
+        encoder_filter,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    conv2 = layers.Conv1D(
+        encoder_filter * 2,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    conv3 = layers.Conv1D(
+        encoder_filter * 4,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    conv4 = layers.Conv1D(
+        encoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    conv5 = layers.Conv1D(
+        encoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    conv6 = layers.Conv1D(
+        encoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
     flatten = layers.Flatten()
 
-    ## tempo head
+    # tempo head
     phead_dense = layers.Dense(48)
     phead_y = layers.Dense(1, activation="sigmoid")
 
-    ## decoder
-    reshape = layers.Reshape((1,1))
+    # decoder
+    reshape = layers.Reshape((1, 1))
 
-    dtconv1 = layers.Conv1DTranspose(decoder_filter*8, kernel_size, strides, padding=padding, activation=activation)
-    dtconv2 = layers.Conv1DTranspose(decoder_filter*8, kernel_size, strides, padding=padding, activation=activation)
-    dtconv3 = layers.Conv1DTranspose(decoder_filter*8, kernel_size, strides, padding=padding, activation=activation)
-    dtconv4 = layers.Conv1DTranspose(decoder_filter*4, kernel_size, strides, padding=padding, activation=activation)
-    dtconv5 = layers.Conv1DTranspose(decoder_filter*2, kernel_size, strides, padding=padding, activation=activation)
-    dtconv6 = layers.Conv1DTranspose(decoder_filter, kernel_size, strides, padding=padding, activation=activation)
-    dreshape = layers.Conv1DTranspose(1, kernel_size, strides, padding=padding, activation=activation)
+    dtconv1 = layers.Conv1DTranspose(
+        decoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    dtconv2 = layers.Conv1DTranspose(
+        decoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    dtconv3 = layers.Conv1DTranspose(
+        decoder_filter * 8,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    dtconv4 = layers.Conv1DTranspose(
+        decoder_filter * 4,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    dtconv5 = layers.Conv1DTranspose(
+        decoder_filter * 2,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    dtconv6 = layers.Conv1DTranspose(
+        decoder_filter,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
+    dreshape = layers.Conv1DTranspose(
+        1,
+        kernel_size,
+        strides,
+        padding=padding,
+        activation=activation)
 
     # encoder 1
     embd1 = conv1(x1)
@@ -276,13 +390,16 @@ def convolutional_autoencoder(sigma, w_tempo, w_recon):
 
     model = tf.keras.Model([x1, x2, k1, k2], [xhat1, xhat2, y1, y2])
 
-    h = tf.keras.losses.Huber(delta=0.25*sigma, reduction="sum_over_batch_size")
+    h = tf.keras.losses.Huber(
+        delta=0.25 * sigma,
+        reduction="sum_over_batch_size")
 
-    e_t = K.abs((y1-y2) - sigma*(k2-k1))
+    e_t = K.abs((y1 - y2) - sigma * (k2 - k1))
 
-    loss_tempo = h(e_t, 0)*w_tempo
+    loss_tempo = h(e_t, 0) * w_tempo
     # https://math.stackexchange.com/questions/2690199/should-the-2-in-l-2-norm-notation-be-a-subscript-or-superscript
-    loss_recon = K.mean(K.mean(K.square(x1-xhat1) + K.square(x2-xhat2), axis=1))*w_recon
+    loss_recon = K.mean(K.mean(K.square(x1 - xhat1) +
+                        K.square(x2 - xhat2), axis=1)) * w_recon
 
     model.add_loss(loss_tempo)
     model.add_loss(loss_recon)
@@ -291,6 +408,7 @@ def convolutional_autoencoder(sigma, w_tempo, w_recon):
     model.add_metric(loss_recon, name="reconstruction_loss")
 
     return model
+
 
 def overfit_to_one_sample(model):
     print("Overfitting to one sample")

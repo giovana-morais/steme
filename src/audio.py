@@ -1,9 +1,9 @@
 import random
 
-from scipy import signal
 from scipy.interpolate import interp1d
 import librosa
 import numpy as np
+
 
 def load_and_resample(audio_file, mono=True):
     desired_sr = 16000
@@ -15,6 +15,7 @@ def load_and_resample(audio_file, mono=True):
         x = x[1]
 
     return x, sr
+
 
 def cqt(x, sr):
     """
@@ -41,6 +42,7 @@ def cqt(x, sr):
 
     return C
 
+
 def get_cqt_slices(C, F=128, slice_idx=None):
     """
     During training, we extract slices of F = 128 CQT bins, setting kmin = 0
@@ -49,14 +51,14 @@ def get_cqt_slices(C, F=128, slice_idx=None):
     k_min = 0
     k_max = 8
 
-    shift_1 = random.randint(k_min,k_max)
-    shift_2 = random.randint(k_min,k_max)
+    shift_1 = random.randint(k_min, k_max)
+    shift_2 = random.randint(k_min, k_max)
 
     if slice_idx is None:
-        slice_idx = random.randint(0, C.shape[1]-1)
+        slice_idx = random.randint(0, C.shape[1] - 1)
 
-    cqt_sample_1 = C[shift_1:shift_1+F, slice_idx]
-    cqt_sample_2 = C[shift_2:shift_2+F, slice_idx]
+    cqt_sample_1 = C[shift_1:shift_1 + F, slice_idx]
+    cqt_sample_2 = C[shift_2:shift_2 + F, slice_idx]
 
     # fix shapes for training
     cqt_sample_1 = cqt_sample_1[:, np.newaxis]
@@ -67,17 +69,26 @@ def get_cqt_slices(C, F=128, slice_idx=None):
 
     return cqt_sample_1, shift_1, cqt_sample_2, shift_2, slice_idx
 
+
 def get_cqt_sample(C, F=128):
     k_min = 0
     k_max = 8
 
-    shift = random.randint(k_min,k_max)
-    slice_idx = random.randint(0, C.shape[1]-1)
-    cqt_sample = C[shift:shift+F, slice_idx]
+    shift = random.randint(k_min, k_max)
+    slice_idx = random.randint(0, C.shape[1] - 1)
+    cqt_sample = C[shift:shift + F, slice_idx]
 
     return cqt_sample[:, np.newaxis]
 
-def spectral_flux(x, sr, n_fft=1024, hop_length=256, gamma=100.0, avg_window=10, norm=True):
+
+def spectral_flux(
+        x,
+        sr,
+        n_fft=1024,
+        hop_length=256,
+        gamma=100.0,
+        avg_window=10,
+        norm=True):
     """
     Compute the spectral flux of a signal and apply logarithmic compression.
 
@@ -105,8 +116,13 @@ def spectral_flux(x, sr, n_fft=1024, hop_length=256, gamma=100.0, avg_window=10,
             the sampling rate of the novelty function. defined as (sampling
             rate)/hop length
     """
-    X = librosa.stft(x, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window="hanning")
-    sr_novelty = sr/hop_length
+    X = librosa.stft(
+        x,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        win_length=n_fft,
+        window="hanning")
+    sr_novelty = sr / hop_length
 
     Y = np.log(1 + gamma * np.abs(X))
 
@@ -123,7 +139,8 @@ def spectral_flux(x, sr, n_fft=1024, hop_length=256, gamma=100.0, avg_window=10,
         for m in range(L):
             init = max(m - avg_window, 0)
             end = min(m + avg_window + 1, L)
-            local_avg[m] = np.sum(novelty[init:end]) * (1/(1 + 2 * avg_window))
+            local_avg[m] = np.sum(novelty[init:end]) * \
+                (1 / (1 + 2 * avg_window))
         novelty = novelty - local_avg
         novelty[novelty < 0] = 0.0
 
@@ -133,6 +150,7 @@ def spectral_flux(x, sr, n_fft=1024, hop_length=256, gamma=100.0, avg_window=10,
             novelty /= max_value
 
     return novelty, sr_novelty
+
 
 def fourier_tempogram(novelty, sr_novelty, window_size, hop_size, theta):
     """
@@ -153,21 +171,22 @@ def fourier_tempogram(novelty, sr_novelty, window_size, hop_size, theta):
             range of BPM to cover
     """
     window = np.hanning(window_size)
-    pad_size = int(window_size//2)
+    pad_size = int(window_size // 2)
 
-    L = novelty.shape[0] + 2*pad_size
+    L = novelty.shape[0] + 2 * pad_size
 
-    novelty_pad = np.concatenate((np.zeros(pad_size), novelty, np.zeros(pad_size)))
+    novelty_pad = np.concatenate(
+        (np.zeros(pad_size), novelty, np.zeros(pad_size)))
     t_pad = np.arange(L)
 
     M = np.int64(np.floor(L - window_size) / hop_size + 1)
     K = len(theta)
-    X = np.zeros((K,M), dtype=np.complex_)
+    X = np.zeros((K, M), dtype=np.complex_)
 
     for k in range(K):
-        omega = (theta[k]/60)/sr_novelty
+        omega = (theta[k] / 60) / sr_novelty
 
-        exponential = np.exp(-2 * np.pi * 1j  * omega * t_pad)
+        exponential = np.exp(-2 * np.pi * 1j * omega * t_pad)
         x_exp = novelty_pad * exponential
 
         for n in range(M):
@@ -179,6 +198,7 @@ def fourier_tempogram(novelty, sr_novelty, window_size, hop_size, theta):
     tempi = theta
 
     return np.abs(X), times, tempi
+
 
 def tempogram(x, sr, window_size_seconds, t_type, theta):
     """
@@ -197,31 +217,39 @@ def tempogram(x, sr, window_size_seconds, t_type, theta):
     """
 
     if not isinstance(theta, np.ndarray):
-        raise ValueError(f"theta type incorrect. it should be np.ndarray, but is {type(theta)}")
+        raise ValueError(
+            f"theta type incorrect. it should be np.ndarray, but is {type(theta)}")
 
     # 2. novelty function
     novelty, sr_novelty = spectral_flux(x, sr, n_fft=2048, hop_length=512)
 
-    window_size_frames = int(window_size_seconds*sr_novelty)
+    window_size_frames = int(window_size_seconds * sr_novelty)
     hop_size = 10
 
     if t_type == "fourier":
-        T, t, bpm = fourier_tempogram(novelty, sr_novelty, window_size=window_size_frames, hop_size=hop_size, theta=theta)
+        T, t, bpm = fourier_tempogram(
+            novelty,
+            sr_novelty,
+            window_size=window_size_frames,
+            hop_size=hop_size,
+            theta=theta
+        )
     elif t_type == "autocorrelation":
-        T, t, bpm, _, _ = autocorrelation_tempogram(novelty, sr_novelty,
-                window_size=window_size_frames, hop_size=hop_size, theta=theta)
+        T, t, bpm, _, _ = autocorrelation_tempogram(
+            novelty, sr_novelty, window_size=window_size_frames, hop_size=hop_size, theta=theta)
     elif t_type == "hybrid":
-        ft, t, bpm = fourier_tempogram(novelty, sr_novelty,
-                window_size=window_size_frames, hop_size=hop_size, theta=theta)
-        at, ta, freqsa, _, _ = autocorrelation_tempogram(novelty, sr_novelty,
-                window_size=window_size_frames, hop_size=hop_size, theta=theta)
+        ft, t, bpm = fourier_tempogram(
+            novelty, sr_novelty, window_size=window_size_frames, hop_size=hop_size, theta=theta)
+        at, ta, freqsa, _, _ = autocorrelation_tempogram(
+            novelty, sr_novelty, window_size=window_size_frames, hop_size=hop_size, theta=theta)
 
-        T = ft*at
+        T = ft * at
     else:
         raise ValueError("tempogram_type incorrect. accepted values are \
                 ['fourier', 'autocorrelation', 'hybrid']")
 
     return T, t, bpm
+
 
 def click_track(bpm, sr=22050, duration=60):
     """
@@ -242,6 +270,7 @@ def click_track(bpm, sr=22050, duration=60):
     times = np.arange(0, duration, step)
 
     return librosa.clicks(times=times, sr=sr)
+
 
 def local_autocorrelation(x, sr, N, H):
     """Compute local autocorrelation [FMP, Section 6.2.3]
@@ -271,14 +300,16 @@ def local_autocorrelation(x, sr, N, H):
         t_1 = t_0 + N
         x_local = win * x_pad[t_0:t_1]
         r_xx = np.correlate(x_local, x_local, mode='full')
-        r_xx = r_xx[N-1:]
+        r_xx = r_xx[N - 1:]
         A[:, n] = r_xx
     sr_A = sr / H
     times = np.arange(A.shape[1]) / sr_A
     lags = np.arange(N) / sr
     return A, times, lags
 
-def autocorrelation_tempogram(novelty, sr_novelty, window_size, hop_size, theta):
+
+def autocorrelation_tempogram(
+        novelty, sr_novelty, window_size, hop_size, theta):
     """
     Compute autocorrelation-based tempogram
 
@@ -313,20 +344,25 @@ def autocorrelation_tempogram(novelty, sr_novelty, window_size, hop_size, theta)
     lag_min = int(np.ceil(sr_novelty * 60 / tempo_max))
     lag_max = int(np.ceil(sr_novelty * 60 / tempo_min))
 
-    A, times, lags = local_autocorrelation(novelty, sr_novelty, window_size, hop_size)
+    A, times, lags = local_autocorrelation(novelty, sr_novelty,
+                                           window_size, hop_size)
     # getting the min/max lag interval to use in the interpolation
-    A_cut = A[lag_min:lag_max+1, :]
+    A_cut = A[lag_min:lag_max + 1, :]
 
     # "cut" the frequencies out of the max/min
-    lags_cut = lags[lag_min:lag_max+1]
+    lags_cut = lags[lag_min:lag_max + 1]
 
     # translate to BPM
     bpms_cut = 60 / lags_cut
     bpms = theta
 
     # interpolate
-    axis_interpolation = interp1d(bpms_cut, A_cut, kind='linear',
-                         axis=0, fill_value='extrapolate')
+    axis_interpolation = interp1d(
+        bpms_cut,
+        A_cut,
+        kind='linear',
+        axis=0,
+        fill_value='extrapolate')
 
     tempogram = axis_interpolation(bpms)
     return tempogram, times, bpms, A_cut, lags_cut

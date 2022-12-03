@@ -2,9 +2,11 @@ import mirdata
 
 import dataset
 
+
 def choose_calibration_candidates(calibration_range):
     if not isinstance(calibration_range, list):
-        raise TypeError(f"calibration_range should be a list or an array, but it \
+        raise TypeError(
+            f"calibration_range should be a list or an array, but it \
         is {type(calbration_range)}")
     gtzan, tracks, tempi = dataset.gtzan_data()
 
@@ -12,14 +14,22 @@ def choose_calibration_candidates(calibration_range):
     for i in tracks:
         gtzan_info[i] = gtzan.track(i).tempo
 
-    gtzan_info = {k: v for k, v in sorted(gtzan_info.items(), key=lambda item: item[1])}
+    gtzan_info = {
+        k: v for k,
+        v in sorted(
+            gtzan_info.items(),
+            key=lambda item: item[1])}
 
     calibration_tracks = {}
     for i in calibration_range:
-        candidates = {k: v for k, v in gtzan_info.items() if np.abs(v - i) <= 1}
+        candidates = {
+            k: v for k,
+            v in gtzan_info.items() if np.abs(
+                v - i) <= 1}
 
         random_candidate = random.choice(list(candidates.keys()))
-        calibration_tracks.update({random_candidate: candidates[random_candidate]})
+        calibration_tracks.update(
+            {random_candidate: candidates[random_candidate]})
 
     return calibration_tracks
 
@@ -43,14 +53,25 @@ def synthetic_tracks(theta, step):
 # os *resultados* da claibração têm que ser plotados seguindo os bins do
 # histograma
 
-def calibration_synthetic(model_name, model_path, tmin, n_bins, bins_per_octave, n_predictions, distribution, t_type):
-    theta = dataset.variables_non_linear(tmin, n_bins=n_bins, bins_per_octave=bins_per_octave)
+
+def calibration_synthetic(
+        model_name,
+        model_path,
+        tmin,
+        n_bins,
+        bins_per_octave,
+        n_predictions,
+        distribution,
+        t_type):
+    theta = dataset.variables_non_linear(
+        tmin, n_bins=n_bins, bins_per_octave=bins_per_octave)
     bpm_dict = create_calibration_tracks(theta, step)
 
     model = tf.keras.models.load_model(model_path)
 
     for bpm, val in bpm_dict.items():
-        T, t, bpms = audio.tempogram(val["audio"], val["sr"], window_size_seconds=10, t_type=t_type, theta=theta)
+        T, t, bpms = audio.tempogram(
+            val["audio"], val["sr"], window_size_seconds=10, t_type=t_type, theta=theta)
 
         bpm_dict[bpm] = {}
         bpm_dict[bpm]["T"] = T
@@ -67,6 +88,7 @@ def calibration_synthetic(model_name, model_path, tmin, n_bins, bins_per_octave,
 
     return bpm_preds
 
+
 def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100, fixed=False):
     print("Calibrating model")
     model_output = np.zeros(len(bpm_dict.keys()))
@@ -75,14 +97,13 @@ def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100, fixed=False):
         T = bpm_dict[bpm]["T"]
 
         preds = np.zeros(n_predictions)
-        step = T.shape[1]//n_predictions
+        step = T.shape[1] // n_predictions
 
         for i in range(n_predictions):
-            slice_idx = i*step
+            slice_idx = i * step
             if fixed:
                 s1, sh1, s2, sh2, _ = dataset.get_tempogram_slices(
-                    T=T, kmin=kmin, kmax=kmax, shift_1=0, shift_2=0, slice_idx=slice_idx
-                )
+                    T=T, kmin=kmin, kmax=kmax, shift_1=0, shift_2=0, slice_idx=slice_idx)
             else:
                 s1, sh1, s2, sh2, _ = dataset.get_tempogram_slices(
                     T=T, kmin=kmin, kmax=kmax, slice_idx=slice_idx
@@ -96,9 +117,9 @@ def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100, fixed=False):
             # preds[i] = (y1[0][0]+y2[0][0])/2
             # preds[i] = y2[0][0]
 
-        bpm_dict[bpm]["slice"] = s1[0,:,0]
+        bpm_dict[bpm]["slice"] = s1[0, :, 0]
         bpm_dict[bpm]["shift"] = sh1
-        bpm_dict[bpm]["estimation"] = xhat1[0,:,0]
+        bpm_dict[bpm]["estimation"] = xhat1[0, :, 0]
         bpm_dict[bpm]["predictions"] = np.array(preds)
         # print(f"Predictions for {bpm} = {np.array(preds)}")
 
@@ -108,4 +129,4 @@ def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100, fixed=False):
     # quad = np.poly1d(np.polyfit(model_output, list(bpm_dict.keys()), 2))
     a, b = utils.get_slope(model_output, list(bpm_dict.keys()))
 
-    return bpm_dict, a, b #, quad
+    return bpm_dict, a, b  # , quad

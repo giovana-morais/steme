@@ -7,11 +7,11 @@ from paths import *
 
 
 def plot_calibration(tracks, predictions, filename):
-    fig, ax = plt.subplots(1, 1, figsize=(20,5))
+    fig, ax = plt.subplots(1, 1, figsize=(20, 5))
     ax = [ax]
     ax[0].boxplot(predictions, vert=1)
     ax[0].xaxis.set_major_locator(ticker.FixedLocator(
-        np.arange(1, len(tracks)+1)
+        np.arange(1, len(tracks) + 1)
     ))
     ax[0].plot()
     ax[0].xaxis.set_major_formatter(ticker.FixedFormatter(tracks))
@@ -27,6 +27,7 @@ def plot_calibration(tracks, predictions, filename):
 
     return fig, ax
 
+
 def plot_reconstructions(bpm_tracks, bpm_dict, main_file, theta):
     fig, ax = plt.subplots(len(bpm_tracks), 1, figsize=(5, 45))
     idx = 0
@@ -35,20 +36,25 @@ def plot_reconstructions(bpm_tracks, bpm_dict, main_file, theta):
         ax[idx].plot(bpm_dict[key]["slice"], label="input")
         ax[idx].plot(bpm_dict[key]["estimation"], label="estimation")
         shift = bpm_dict[key]["shift"][0]
-        ax[idx].title.set_text(f"BPM = {key}, shift {shift} estimation: {np.median(bpm_dict[key]['predictions']):.4f}")
+        ax[idx].title.set_text(
+            f"BPM = {key}, shift {shift} estimation: {np.median(bpm_dict[key]['predictions']):.4f}")
 
         ax[idx].set_xticks(np.arange(0, 128, 20))
-        ax[idx].set_xticklabels(np.round(theta[0+shift:128+shift:20], 2))
+        ax[idx].set_xticklabels(np.round(theta[0 + shift:128 + shift:20], 2))
         ax[idx].legend()
         idx += 1
 
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig(os.path.join(DATA_FOLDER, f"imgs/{main_file}_reconstructions.png"))
+    plt.savefig(
+        os.path.join(
+            DATA_FOLDER,
+            f"imgs/{main_file}_reconstructions.png"))
     return
 
+
 def plot_tempogram(T, t, freqs, title=None):
-    figsize = (10,5)
+    figsize = (10, 5)
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     kwargs = _tempogram_kwargs(t, freqs)
 
@@ -64,8 +70,17 @@ def plot_tempogram(T, t, freqs, title=None):
 
     return fig, ax
 
-def plot_comparison(T, t, freqs, reference_tempo, predicted_tempo, share_plot=False,
-        xlim=None, ylim=None, title=None):
+
+def plot_comparison(
+        T,
+        t,
+        freqs,
+        reference_tempo,
+        predicted_tempo,
+        share_plot=False,
+        xlim=None,
+        ylim=None,
+        title=None):
     """
     Plot tempogram comparison
 
@@ -95,7 +110,7 @@ def plot_comparison(T, t, freqs, reference_tempo, predicted_tempo, share_plot=Fa
     fig, ax
     """
     fig = None
-    figsize = (10,5)
+    figsize = (10, 5)
 
     if share_plot:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -110,9 +125,11 @@ def plot_comparison(T, t, freqs, reference_tempo, predicted_tempo, share_plot=Fa
     # plot tempogram and ground_truth tempo
     ax[0].imshow(T, **kwargs)
     ax[0].hlines(reference_tempo,
-        xmin=t[0], xmax=t[-1],
-        label=f"ground_truth: {reference_tempo} bpm", color="r", linestyle="-."
-    )
+                 xmin=t[0],
+                 xmax=t[-1],
+                 label=f"ground_truth: {reference_tempo} bpm",
+                 color="r",
+                 linestyle="-.")
     ax[0].legend()
 
     # plot tempogram and tempo prediction
@@ -125,7 +142,13 @@ def plot_comparison(T, t, freqs, reference_tempo, predicted_tempo, share_plot=Fa
         color="r"
     )
     ax[prediction_plot_idx].plot(t, predicted_tempo, color="orange", alpha=0.4)
-    ax[prediction_plot_idx].scatter(t, predicted_tempo, label="predictions", s=6, color="orange", alpha=0.7)
+    ax[prediction_plot_idx].scatter(
+        t,
+        predicted_tempo,
+        label="predictions",
+        s=6,
+        color="orange",
+        alpha=0.7)
     ax[prediction_plot_idx].legend()
 
     if xlim is None:
@@ -140,7 +163,15 @@ def plot_comparison(T, t, freqs, reference_tempo, predicted_tempo, share_plot=Fa
 
     return fig, ax
 
-def plot_experiment_results(results, n_plots=10, ylim=None, theta=np.arange(30,301,1)):
+
+def plot_experiment_results(
+    results,
+    n_plots=10,
+    ylim=None,
+    theta=np.arange(
+        30,
+        301,
+        1)):
     """
     Plot experiment results
 
@@ -154,14 +185,15 @@ def plot_experiment_results(results, n_plots=10, ylim=None, theta=np.arange(30,3
         Number of plots one desires to check
     """
     if n_plots > len(results):
-        raise ValueError(f"You're trying to plot {n_plots} samples, but there are {len(results)} available")
+        raise ValueError(
+            f"You're trying to plot {n_plots} samples, but there are {len(results)} available")
 
     if ylim is None:
-        ylim = (30,300)
+        ylim = (30, 300)
 
-    n_rows = int(n_plots//2)
+    n_rows = int(n_plots // 2)
     n_cols = 2
-    fig, ax = plt.subplots(n_rows, n_cols, figsize=(20,25))
+    fig, ax = plt.subplots(n_rows, n_cols, figsize=(20, 25))
 
     row_idx, col_idx = 0, 0
     plots = 0
@@ -197,7 +229,13 @@ def plot_experiment_results(results, n_plots=10, ylim=None, theta=np.arange(30,3
                 color="b",
                 linestyle="--"
             )
-            ax[row_idx][col_idx].scatter(t, baseline_tempo, label="prediction by frame", s=6, color="blue", alpha=0.7)
+            ax[row_idx][col_idx].scatter(
+                t,
+                baseline_tempo,
+                label="prediction by frame",
+                s=6,
+                color="blue",
+                alpha=0.7)
 
         median_prediction = np.median(predicted_tempo)
         ax[row_idx][col_idx].hlines(
@@ -207,7 +245,13 @@ def plot_experiment_results(results, n_plots=10, ylim=None, theta=np.arange(30,3
             color="green"
         )
         # ax[row_idx][col_idx].plot(t, predicted_tempo, color="orange", alpha=0.4)
-        ax[row_idx][col_idx].scatter(t, predicted_tempo, label="baseline by frame", s=6, color="green", alpha=0.7)
+        ax[row_idx][col_idx].scatter(
+            t,
+            predicted_tempo,
+            label="baseline by frame",
+            s=6,
+            color="green",
+            alpha=0.7)
 
         ax[row_idx][col_idx].title.set_text(track_id)
         ax[row_idx][col_idx].legend()
@@ -223,6 +267,7 @@ def plot_experiment_results(results, n_plots=10, ylim=None, theta=np.arange(30,3
 
     return fig, ax
 
+
 def _tempogram_kwargs(t, freqs):
     kwargs = {}
     x_ext1 = (t[1] - t[0]) / 2
@@ -230,7 +275,8 @@ def _tempogram_kwargs(t, freqs):
     y_ext1 = (freqs[1] - freqs[0]) / 2
     y_ext2 = (freqs[-1] - freqs[-2]) / 2
 
-    kwargs["extent"] = [t[0] - x_ext1, t[-1] + x_ext2, freqs[0] - y_ext1, freqs[-1] + y_ext2]
+    kwargs["extent"] = [t[0] - x_ext1, t[-1] +
+                        x_ext2, freqs[0] - y_ext1, freqs[-1] + y_ext2]
     kwargs["cmap"] = "gray_r"
     kwargs["aspect"] = "auto"
     kwargs["origin"] = "lower"
@@ -238,18 +284,26 @@ def _tempogram_kwargs(t, freqs):
 
     return kwargs
 
+
 def plot_slice(tempo_slice, freqs, tempo, harmonics=False):
-    ylim = tempo_slice.max()+1
-    plt.vlines(tempo, ymin=0, ymax=ylim, linestyle="--", colors="r", label=f"{tempo} bpm")
+    ylim = tempo_slice.max() + 1
+    plt.vlines(
+        tempo,
+        ymin=0,
+        ymax=ylim,
+        linestyle="--",
+        colors="r",
+        label=f"{tempo} bpm")
 
     if harmonics:
-        plt.vlines(tempo*2, ymin=0, ymax=ylim, linestyle="--", colors="r")
-        plt.vlines(tempo*4, ymin=0, ymax=ylim, linestyle="--", colors="r",
-                alpha=0.6)
+        plt.vlines(tempo * 2, ymin=0, ymax=ylim, linestyle="--", colors="r")
+        plt.vlines(tempo * 4, ymin=0, ymax=ylim, linestyle="--", colors="r",
+                   alpha=0.6)
 
     plt.plot(freqs, tempo_slice, label="tempogram slice")
     plt.xlim(30, 300)
     plt.legend()
+
 
 def get_slope(model_output, frequencies):
     """
@@ -265,10 +319,10 @@ def get_slope(model_output, frequencies):
     x_mean = np.mean(x)
     y_mean = np.mean(y)
 
-    Sxy = np.sum(x*y)- n*x_mean*y_mean
-    Sxx = np.sum(x*x)-n*x_mean*x_mean
+    Sxy = np.sum(x * y) - n * x_mean * y_mean
+    Sxx = np.sum(x * x) - n * x_mean * x_mean
 
-    a = Sxy/Sxx
-    b = y_mean-a*x_mean
+    a = Sxy / Sxx
+    b = y_mean - a * x_mean
 
     return a, b

@@ -20,7 +20,14 @@ import models
 import utils
 from paths import *
 
-def calibrate_model(model, kmin, kmax, mirdata_dataset, n_predictions=100, shift=False):
+
+def calibrate_model(
+        model,
+        kmin,
+        kmax,
+        mirdata_dataset,
+        n_predictions=100,
+        shift=False):
     tempi = [mirdata_dataset.track(i).tempo for i in mirdata_dataset.track_ids]
     track = [i for i in mirdata_dataset.track_ids]
     tracks = []
@@ -47,13 +54,15 @@ def calibrate_model(model, kmin, kmax, mirdata_dataset, n_predictions=100, shift
     # TODO: instead of calculating tempograms everytime, we could only load the
     # file from the dataset name
     print("Sampling tracks for calibration")
-    for idx in range(len(intervals)-1):
+    for idx in range(len(intervals) - 1):
         try:
-            interval = tempi[(tempi > intervals[idx]) & (tempi < intervals[idx+1])]
+            interval = tempi[(tempi > intervals[idx]) &
+                             (tempi < intervals[idx + 1])]
             bpm = random.choice(interval)
             bpm_dict[bpm] = {}
             x, sr = mirdata_dataset.track(track_dict[bpm]).audio
-            T, t, bpms = audio.tempogram(x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
+            T, t, bpms = audio.tempogram(
+                x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
 
             bpm_dict[bpm]["audio"] = x
             bpm_dict[bpm]["T"] = T
@@ -64,7 +73,8 @@ def calibrate_model(model, kmin, kmax, mirdata_dataset, n_predictions=100, shift
             bpm_tracks.append(bpm)
             print(f"[{intervals[idx]}, {intervals[idx+1]}] - {bpm}")
         except IndexError:
-            print(f"no index for interval [{intervals[idx]}, {intervals[idx+1]}]")
+            print(
+                f"no index for interval [{intervals[idx]}, {intervals[idx+1]}]")
 
     print("Calibrating model")
     model_output = np.zeros(len(bpm_dict.keys()))
@@ -75,11 +85,12 @@ def calibrate_model(model, kmin, kmax, mirdata_dataset, n_predictions=100, shift
         preds = np.zeros(n_predictions)
 
         for i in range(n_predictions):
-            s1, sh1, s2, sh2, _ = dt.get_tempogram_slices(T, kmin=kmin, kmax=kmax)
+            s1, sh1, s2, sh2, _ = dt.get_tempogram_slices(
+                T, kmin=kmin, kmax=kmax)
             s1 = s1[np.newaxis, :]
             s2 = s1[np.newaxis, :]
 
-            if shift == False:
+            if not shift:
                 s2 = s1
                 sh2 = sh1
 
@@ -94,6 +105,7 @@ def calibrate_model(model, kmin, kmax, mirdata_dataset, n_predictions=100, shift
 
     return a, b, quad
 
+
 def evaluate_model(ballroom, evaluation_file, model, a, b, quad):
     with h5py.File(evaluation_file, "a") as whf:
         for track_id in ballroom.track_ids:
@@ -101,21 +113,24 @@ def evaluate_model(ballroom, evaluation_file, model, a, b, quad):
 
             theta = dt.variables_non_linear()
             x, sr = ballroom.track(track_id).audio
-            T, t, freqs = audio.tempogram(x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
+            T, t, freqs = audio.tempogram(
+                x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
             reference_tempo = ballroom.track(track_id).tempo
 
             for i in range(T.shape[1]):
-                s1, sh1, s2, sh2, _ = dt.get_tempogram_slices(T, slice_idx=i, kmin=11, kmax=19)
+                s1, sh1, s2, sh2, _ = dt.get_tempogram_slices(
+                    T, slice_idx=i, kmin=11, kmax=19)
                 # range between 0,1
                 s1 /= s1.max()
                 s2 /= s2.max()
 
                 s1 = s1[np.newaxis, :]
 
-                xhat1, xhat2, y1, y2 = model.predict([s1, s1, sh1, sh1], verbose=0)
+                xhat1, xhat2, y1, y2 = model.predict(
+                    [s1, s1, sh1, sh1], verbose=0)
                 predictions.append(y1[0][0])
 
-            predicted_tempo_linear = np.array(predictions)*a+b
+            predicted_tempo_linear = np.array(predictions) * a + b
             predicted_tempo_quadratic = quad(np.array(predictions))
             baseline_tempo = np.take(freqs, np.argmax(T, axis=-2))
 
@@ -130,6 +145,7 @@ def evaluate_model(ballroom, evaluation_file, model, a, b, quad):
 
     return
 
+
 def get_metrics(evaluation_file):
     baseline_metrics = {}
     predicted_metrics = {}
@@ -143,11 +159,15 @@ def get_metrics(evaluation_file):
             # t = value["t"][:]
             # freqs = value["freqs"][:]
 
-            baseline_acc1 = metrics.acc1(reference_tempo, np.median(baseline_tempo))
-            baseline_acc2 = metrics.acc2(reference_tempo, np.median(baseline_tempo))
+            baseline_acc1 = metrics.acc1(
+                reference_tempo, np.median(baseline_tempo))
+            baseline_acc2 = metrics.acc2(
+                reference_tempo, np.median(baseline_tempo))
 
-            predicted_acc1 = metrics.acc1(reference_tempo, np.median(predicted_tempo_linear))
-            predicted_acc2 = metrics.acc2(reference_tempo, np.median(predicted_tempo_linear))
+            predicted_acc1 = metrics.acc1(
+                reference_tempo, np.median(predicted_tempo_linear))
+            predicted_acc2 = metrics.acc2(
+                reference_tempo, np.median(predicted_tempo_linear))
 
             baseline_metrics[key] = {}
             baseline_metrics[key]["acc1"] = baseline_acc1
@@ -161,10 +181,10 @@ def get_metrics(evaluation_file):
     predicted_df = pd.DataFrame.from_dict(predicted_metrics, orient="index")
 
     df = baseline_df.merge(
-            predicted_df,
-            left_index=True, right_index=True,
-            suffixes=("_baseline", "_predicted")
-        )
+        predicted_df,
+        left_index=True, right_index=True,
+        suffixes=("_baseline", "_predicted")
+    )
 
     df["acc1_baseline"] = df["acc1_baseline"].astype(float)
     df["acc1_predicted"] = df["acc1_predicted"].astype(float)
@@ -179,7 +199,8 @@ def get_metrics(evaluation_file):
 
 def main(model_path, kmin, kmax):
     model = tf.keras.models.load_model(model_path)
-    ballroom = loader.custom_dataset_loader(path=DATASET_FOLDER, dataset_name="ballroom", folder="")
+    ballroom = loader.custom_dataset_loader(
+        path=DATASET_FOLDER, dataset_name="ballroom", folder="")
 
     # TODO:
     # 0. check if file with tempograms exist so we don't need to calculate it
