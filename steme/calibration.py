@@ -1,6 +1,6 @@
 import mirdata
 
-import dataset
+import steme.dataset
 
 
 def choose_calibration_candidates(calibration_range):

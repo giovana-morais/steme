@@ -9,9 +9,9 @@ import mirdata
 import pandas as pd
 from scipy.stats import tukeylambda, lognorm, uniform
 
-import audio
-import loader
-from paths import *
+import steme.audio
+import steme.loader
+from steme.paths import *
 
 
 def load_calibration_tracks(filename):

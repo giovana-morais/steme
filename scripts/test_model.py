@@ -12,13 +12,13 @@ import matplotlib.ticker as ticker
 import pandas as pd
 import tensorflow as tf
 
-import audio
-import dataset as dt
-import loader
-import metrics
-import models
-import utils
-from paths import *
+import steme.audio
+import steme.dataset as dt
+import steme.loader
+import steme.metrics
+import steme.models
+import steme.utils
+from steme.paths import *
 
 
 def calibrate_model(

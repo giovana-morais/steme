@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 
-from paths import *
+from steme.paths import *
 
 
 def plot_calibration(tracks, predictions, filename):

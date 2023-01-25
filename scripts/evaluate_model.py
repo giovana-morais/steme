@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-import audio
-import dataset as dt
-import loader
-import metrics
-import utils
-from paths import *
+import steme.audio
+import steme.dataset as dt
+import steme.loader
+import steme.metrics
+import steme.utils
+from steme.paths import *
 
 
 def evaluate_model(ballroom, evaluation_file, model, kmin, kmax):

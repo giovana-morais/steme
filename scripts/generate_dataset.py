@@ -3,10 +3,10 @@ import random
 
 import h5py
 
-import audio
-import dataset
-import loader
-from paths import *
+import steme.audio
+import steme.dataset
+import steme.loader
+from steme.paths import *
 
 
 def main(dataset_name, dataset_type, synthetic, tmin, bins_per_octave, n_bins,

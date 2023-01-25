@@ -1,6 +1,5 @@
 import os
 import types
-import loader
 import librosa
 import numpy as np
 from mirdata import annotations
