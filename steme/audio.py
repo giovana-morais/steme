@@ -4,83 +4,6 @@ from scipy.interpolate import interp1d
 import librosa
 import numpy as np
 
-
-def load_and_resample(audio_file, mono=True):
-    desired_sr = 16000
-
-    x, sr = librosa.load(audio_file, sr=desired_sr, mono=mono)
-
-    if not mono:
-        # we just want the voice channel
-        x = x[1]
-
-    return x, sr
-
-
-def cqt(x, sr):
-    """
-    The CQT frontend is parametrized to use Q = 24 bins per octave,
-    so as to achieve a resolution equal to one half-semitone per
-    bin.
-    We set fbase equal to the frequency of the note C1, i.e.,
-    fbase ' 32.70 Hz and we compute up to Fmax = 190 CQT
-    bins, i.e., to cover the range of frequency up to Nyquist.
-    We use a Hann window with hop length set equal to 512 samples,
-    i.e., one CQT frame every 32 ms.
-    """
-
-    Q = 24
-    fbase = 32.70
-    n_bins = 190
-    window = "hann"
-    hop_length = 512
-
-    x_cqt = librosa.cqt(y=x, sr=sr, hop_length=hop_length, fmin=fbase,
-                        n_bins=n_bins, bins_per_octave=Q,
-                        window=window)
-    C = np.abs(x_cqt)
-
-    return C
-
-
-def get_cqt_slices(C, F=128, slice_idx=None):
-    """
-    During training, we extract slices of F = 128 CQT bins, setting kmin = 0
-    and kmax = 8 (i.e., between 0 and 4 semitones when Q = 24).
-    """
-    k_min = 0
-    k_max = 8
-
-    shift_1 = random.randint(k_min, k_max)
-    shift_2 = random.randint(k_min, k_max)
-
-    if slice_idx is None:
-        slice_idx = random.randint(0, C.shape[1] - 1)
-
-    cqt_sample_1 = C[shift_1:shift_1 + F, slice_idx]
-    cqt_sample_2 = C[shift_2:shift_2 + F, slice_idx]
-
-    # fix shapes for training
-    cqt_sample_1 = cqt_sample_1[:, np.newaxis]
-    cqt_sample_2 = cqt_sample_2[:, np.newaxis]
-
-    shift_1 = np.array([shift_1])
-    shift_2 = np.array([shift_2])
-
-    return cqt_sample_1, shift_1, cqt_sample_2, shift_2, slice_idx
-
-
-def get_cqt_sample(C, F=128):
-    k_min = 0
-    k_max = 8
-
-    shift = random.randint(k_min, k_max)
-    slice_idx = random.randint(0, C.shape[1] - 1)
-    cqt_sample = C[shift:shift + F, slice_idx]
-
-    return cqt_sample[:, np.newaxis]
-
-
 def spectral_flux(
         x,
         sr,
@@ -220,7 +143,6 @@ def tempogram(x, sr, window_size_seconds, t_type, theta):
         raise ValueError(
             f"theta type incorrect. it should be np.ndarray, but is {type(theta)}")
 
-    # 2. novelty function
     novelty, sr_novelty = spectral_flux(x, sr, n_fft=2048, hop_length=512)
 
     window_size_frames = int(window_size_seconds * sr_novelty)
