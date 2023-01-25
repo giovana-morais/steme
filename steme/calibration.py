@@ -3,6 +3,24 @@ import mirdata
 import steme.dataset
 
 
+def load_calibration_tracks(filename):
+    with h5py.File(filename, "r") as hf:
+        tracks = [key for key in hf.keys()]
+        bpm_dict = {}
+
+        for key, value in hf.items():
+            reference_tempo = value["reference_tempo"][()]
+            bpm_dict[reference_tempo] = {}
+
+            bpm_dict[reference_tempo]["T"] = value["T"][:]
+            bpm_dict[reference_tempo]["t"] = value["t"][:]
+            bpm_dict[reference_tempo]["freqs"] = value["freqs"][:]
+            bpm_dict[reference_tempo]["audio"] = value["audio"][:]
+            bpm_dict[reference_tempo]["reference_tempo"] = value["reference_tempo"][:]
+
+    return bpm_dict
+
+
 def choose_calibration_candidates(calibration_range):
     if not isinstance(calibration_range, list):
         raise TypeError(
@@ -45,13 +63,6 @@ def synthetic_tracks(theta, step):
         bpm_dict["audio"] = audio.click_track(bpm=i, sr=22050)
 
     return bpm_dict
-
-# o que eu quero é:
-# a gente vai ter uma lista de bpms que vão seguir o intervalo de, sei lá, 30 a
-# 240, 10 a 10 BPM
-# a partir dessa lsita, a gente vai fazer a calibração
-# os *resultados* da claibração têm que ser plotados seguindo os bins do
-# histograma
 
 
 def calibration_synthetic(

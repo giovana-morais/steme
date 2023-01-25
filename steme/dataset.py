@@ -14,24 +14,6 @@ import steme.loader
 from steme.paths import *
 
 
-def load_calibration_tracks(filename):
-    with h5py.File(filename, "r") as hf:
-        tracks = [key for key in hf.keys()]
-        bpm_dict = {}
-
-        for key, value in hf.items():
-            reference_tempo = value["reference_tempo"][()]
-            bpm_dict[reference_tempo] = {}
-
-            bpm_dict[reference_tempo]["T"] = value["T"][:]
-            bpm_dict[reference_tempo]["t"] = value["t"][:]
-            bpm_dict[reference_tempo]["freqs"] = value["freqs"][:]
-            bpm_dict[reference_tempo]["audio"] = value["audio"][:]
-            bpm_dict[reference_tempo]["reference_tempo"] = value["reference_tempo"][:]
-
-    return bpm_dict
-
-
 def generate_biased_data(main_file, distribution, theta, t_type):
     """
     Generates synthetic data (click tracks) following a distribution.
@@ -98,8 +80,11 @@ def gtzan_data():
             "mir_datasets/gtzan_genre"),
         version="default")
     tracks = gtzan.track_ids
+
+    # remove tracks with no tempo annotation
     tracks.remove("reggae.00086")
     tempi = [gtzan.track(track_id).tempo for track_id in tracks]
+
 
     return gtzan, tracks, tempi
 
@@ -111,10 +96,13 @@ def giant_steps_data():
         folder=""
     )
     tracks = gs.track_ids
+    # remove tracks with no tempo annotation
     tracks.remove("3041381.LOFI")
     tracks.remove("3041383.LOFI")
     tracks.remove("1327052.LOFI")
+
     tempi = [gs.track(track_id).tempo for track_id in tracks]
+
     return gs, tracks, tempi
 
 

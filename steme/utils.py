@@ -168,10 +168,7 @@ def plot_experiment_results(
     results,
     n_plots=10,
     ylim=None,
-    theta=np.arange(
-        30,
-        301,
-        1)):
+    theta=np.arange(30, 301, 1)):
     """
     Plot experiment results
 

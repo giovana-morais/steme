@@ -21,6 +21,7 @@ def train_model(
         validation_data,
         epochs,
         early_stopping):
+
     log_dir = os.path.join(LOG_FOLDER, f"{model_name}")  # _{TIMESTAMP}")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir, histogram_freq=1)
