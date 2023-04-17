@@ -1,17 +1,15 @@
 import os
-import pdb
 import random
 from collections import Counter
 
 import h5py
 import numpy as np
 import mirdata
-import pandas as pd
 from scipy.stats import tukeylambda, lognorm, uniform
 
-import steme.audio
-import steme.loader
-from steme.paths import *
+import steme.audio as audio
+import steme.loader as loader
+import steme.paths as paths
 
 
 def generate_biased_data(main_file, distribution, theta, t_type):
@@ -76,7 +74,7 @@ def gtzan_data():
     gtzan = mirdata.initialize(
         "gtzan_genre",
         data_home=os.path.join(
-            DATASET_FOLDER,
+            paths.DATASET_FOLDER,
             "mir_datasets/gtzan_genre"),
         version="default")
     tracks = gtzan.track_ids
@@ -91,7 +89,7 @@ def gtzan_data():
 
 def giant_steps_data():
     gs = loader.custom_dataset_loader(
-        path=DATASET_FOLDER,
+        path=paths.DATASET_FOLDER,
         dataset_name="giantsteps-tempo-dataset",
         folder=""
     )
@@ -108,7 +106,7 @@ def giant_steps_data():
 
 def ballroom_data():
     ballroom = loader.custom_dataset_loader(
-        path=DATASET_FOLDER,
+        path=paths.DATASET_FOLDER,
         dataset_name="ballroom",
         folder=""
     )
@@ -120,7 +118,7 @@ def ballroom_data():
 
 def brid_data():
     brid = loader.custom_dataset_loader(
-        path=DATASET_FOLDER,
+        path=paths.DATASET_FOLDER,
         dataset_name="brid",
         folder=""
     )
@@ -131,7 +129,7 @@ def brid_data():
 
 
 def get_metadata_file(main_file):
-    return os.path.join(DATA_FOLDER, f"{main_file}_metadata.h5")
+    return os.path.join(paths.DATA_FOLDER, f"{main_file}_metadata.h5")
 
 
 def read_dataset_info(main_file):
@@ -213,10 +211,10 @@ def generate_synthetic_dataset(
     train_file = f"{main_file}_train"
     validation_file = f"{main_file}_validation"
 
-    main_filepath = os.path.join(DATA_FOLDER, f"{main_file}.h5")
-    train_filepath = os.path.join(DATA_FOLDER, f"{main_file}_train.h5")
+    main_filepath = os.path.join(paths.DATA_FOLDER, f"{main_file}.h5")
+    train_filepath = os.path.join(paths.DATA_FOLDER, f"{main_file}_train.h5")
     validation_filepath = os.path.join(
-        DATA_FOLDER, f"{main_file}_validation.h5")
+        paths.DATA_FOLDER, f"{main_file}_validation.h5")
 
     keys = [k for k in dist_counter.keys()]
     tmin = min(keys)
@@ -282,14 +280,13 @@ def generate_dataset(dataset_name, dataset_type, theta):
         tempi = gtzan_tempi + gs_tempi
 
     main_file = f"{dataset_name}"
-    dist_counter = Counter(tempi)
     train_file = f"{main_file}_train"
     validation_file = f"{main_file}_validation"
 
-    main_filepath = os.path.join(DATA_FOLDER, f"{main_file}.h5")
-    train_filepath = os.path.join(DATA_FOLDER, f"{main_file}_train.h5")
+    main_filepath = os.path.join(paths.DATA_FOLDER, f"{main_file}.h5")
+    train_filepath = os.path.join(paths.DATA_FOLDER, f"{main_file}_train.h5")
     validation_filepath = os.path.join(
-        DATA_FOLDER, f"{main_file}_validation.h5")
+        paths.DATA_FOLDER, f"{main_file}_validation.h5")
 
     tmin = min(tempi)
     tmax = max(tempi)
