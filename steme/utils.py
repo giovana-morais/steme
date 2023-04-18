@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 
-from steme.paths import *
+import steme.paths as paths
 
 
 def plot_calibration(tracks, predictions, filename):
@@ -20,10 +20,9 @@ def plot_calibration(tracks, predictions, filename):
     ax[0].grid(True)
     # ax[0].title.set_text(f"Prediction with fixed shift. a = {np.round(a_fixed, 2)}, b = {np.round(b_fixed, 2)}")
 
-    fig.suptitle(model_name, fontsize=16)
+    # fig.suptitle(model_name, fontsize=16)
 
-    if savefig:
-        plt.savefig(f"../data/{filename}_synthetic.png")
+    plt.savefig(f"../data/{filename}_synthetic.png")
 
     return fig, ax
 
@@ -48,7 +47,7 @@ def plot_reconstructions(bpm_tracks, bpm_dict, main_file, theta):
     plt.grid(True)
     plt.savefig(
         os.path.join(
-            DATA_FOLDER,
+            paths.DATA_FOLDER,
             f"imgs/{main_file}_reconstructions.png"))
     return
 

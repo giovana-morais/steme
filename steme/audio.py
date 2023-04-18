@@ -1,5 +1,3 @@
-import random
-
 from scipy.interpolate import interp1d
 import librosa
 import numpy as np
@@ -146,7 +144,7 @@ def tempogram(x, sr, window_size_seconds, t_type, theta):
     novelty, sr_novelty = spectral_flux(x, sr, n_fft=2048, hop_length=512)
 
     window_size_frames = int(window_size_seconds * sr_novelty)
-    hop_size = 10
+    hop_size = 1
 
     if t_type == "fourier":
         T, t, bpm = fourier_tempogram(

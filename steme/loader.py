@@ -12,7 +12,7 @@ MAX_STR_LEN = 100
 def custom_loader(path, dataset_name, folder='datasets'):
     print(f'Loading {dataset_name} through custom loader')
     datasetdir = os.path.join(path, folder, dataset_name)
-    dataset = loader.Dataset(
+    dataset = Dataset(
         data_home=os.path.join(
             datasetdir, 'audio'), annotations_home=os.path.join(
             datasetdir, 'annotations'))
@@ -23,7 +23,7 @@ def custom_loader(path, dataset_name, folder='datasets'):
 def custom_dataset_loader(path, dataset_name, folder='datasets'):
     print(f'Loading {dataset_name} through custom loader')
     datasetdir = os.path.join(path, folder, dataset_name)
-    dataset = loader.Dataset(
+    dataset = Dataset(
         data_home=os.path.join(
             datasetdir, 'audio'), annotations_home=os.path.join(
             datasetdir, 'annotations'))

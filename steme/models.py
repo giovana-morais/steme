@@ -1,4 +1,3 @@
-import keras
 import keras.backend as K
 import tensorflow as tf
 
@@ -10,7 +9,6 @@ def spice(sigma, w_tempo, w_recon):
     decoder_filter = 32
     kernel_size = 3
     strides = 1
-    batch_size = 64
     padding = "same"
 
     x1 = layers.Input(shape=(128, 1))
@@ -251,7 +249,6 @@ def convolutional_autoencoder(sigma, w_tempo, w_recon):
     strides = 2
     padding = "same"
     activation = "relu"
-    batch_size = 64
 
     x1 = layers.Input(shape=(128, 1))
     x2 = layers.Input(shape=(128, 1))
@@ -409,12 +406,3 @@ def convolutional_autoencoder(sigma, w_tempo, w_recon):
 
     return model
 
-
-def overfit_to_one_sample(model):
-    print("Overfitting to one sample")
-    s1, sh1, s2, sh2, _ = audio.overfit_sample()
-    model.compile(optimizer=tf.keras.optimizers.Adam(LEARNING_RATE))
-    model.fit([s1, s1, sh1, sh1], [s1, s1, sh1, sh1], epochs=50)
-    recon1, outshift1, recon2, outshift2 = model.predict([s1, s1, sh1, sh1])
-
-    assert np.allclose(recon1, s1, atol=0.1), "Model does not overfit"

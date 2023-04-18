@@ -1,6 +1,12 @@
-import mirdata
+import random
 
-import steme.dataset
+import h5py
+import numpy as np
+import tensorflow as tf
+
+import steme.audio as audio
+import steme.dataset as dataset
+import steme.utils as utils
 
 
 def load_calibration_tracks(filename):
