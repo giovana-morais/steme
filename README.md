@@ -15,6 +15,7 @@ pip install -e .
 
 ## Cite
 
+```
 @misc{morais2023tempo,
 	title={Tempo vs. Pitch: understanding self-supervised tempo estimation},
 	author={Giovana Morais and Matthew E. P. Davies and Marcelo Queiroz
@@ -24,3 +25,4 @@ pip install -e .
 	archivePrefix={arXiv},
 	primaryClass={cs.SD}
 }
+```
