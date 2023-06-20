@@ -68,6 +68,37 @@ def plot_tempogram(T, t, freqs, title=None):
     if title is not None:
         fig.suptitle(title, fontsize=16)
 
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Tempo (BPM)")
+
+    return fig, ax
+
+def plot_tempogram_comparison(T, t, freqs, subplot_titles=None, fig_title=None, figsize=None):
+    num_tempograms = len(T)
+
+    if figsize is None:
+        figsize = (5*num_tempograms, 5)
+    fig, ax = plt.subplots(1, num_tempograms, figsize=figsize)
+
+    for idx in range(num_tempograms):
+        kwargs = _tempogram_kwargs(t[idx], freqs[idx])
+
+        ax[idx].imshow(T[idx], **kwargs)
+
+        xlim = (t[idx][0], t[idx][-1])
+        ylim = (freqs[idx][0], freqs[idx][-1])
+
+        plt.setp(ax, xlim=xlim, ylim=ylim)
+
+        if fig_title is not None:
+            fig.suptitle(fig_title, fontsize=16)
+
+        ax[idx].set_xlabel("Time (s)")
+        ax[idx].set_ylabel("Tempo (BPM)")
+
+        if subplot_titles is not None:
+            ax[idx].title.set_text(subplot_titles[idx])
+
     return fig, ax
 
 
