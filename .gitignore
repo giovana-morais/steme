@@ -1,1 +1,9 @@
+steme.egg-info/
+
 */*__pycache__
+
+*/.ipynb_checkpoints/
+
+# ignoring generated images
+*.png
+*.svg

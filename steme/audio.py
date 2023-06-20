@@ -42,7 +42,7 @@ def spectral_flux(
         n_fft=n_fft,
         hop_length=hop_length,
         win_length=n_fft,
-        window="hanning")
+        window="hann")
     sr_novelty = sr / hop_length
 
     Y = np.log(1 + gamma * np.abs(X))
