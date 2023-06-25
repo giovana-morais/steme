@@ -16,13 +16,13 @@ pip install -e .
 ## Cite
 
 ```
-@misc{morais2023tempo,
-	title={Tempo vs. Pitch: understanding self-supervised tempo estimation},
-	author={Giovana Morais and Matthew E. P. Davies and Marcelo Queiroz
-		and Magdalena Fuentes},
-	year={2023},
-	eprint={2304.06868},
-	archivePrefix={arXiv},
-	primaryClass={cs.SD}
-}
+@inproceedings{morais2023tempovspitch,
+  author={Morais, Giovana and Davies, Matthew E. P. and Queiroz, Marcelo and Fuentes, Magdalena},
+  booktitle={ICASSP 2023 - 2023 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+  title={Tempo vs. Pitch: Understanding Self-Supervised Tempo Estimation}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-5},
+  doi={10.1109/ICASSP49357.2023.10095292}}
 ```
