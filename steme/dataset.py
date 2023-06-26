@@ -75,7 +75,7 @@ def gtzan_data():
         "gtzan_genre",
         data_home=os.path.join(
             paths.DATASET_FOLDER,
-            "mir_datasets/gtzan_genre"),
+            "gtzan_genre"),
         version="default")
     tracks = gtzan.track_ids
 
@@ -257,6 +257,20 @@ def generate_synthetic_dataset(
 
     return response
 
+def lognormal70():
+    return lognorm.rvs(0.25, loc=30, scale=50, size=1000, random_state=42)
+
+def lognormal150():
+    return lognorm.rvs(0.25, loc=70, scale=50, size=1000, random_state=42)
+
+def lognormal170():
+    return lognorm.rvs(0.25, loc=120, scale=50, size=1000, random_state=42)
+
+def log_uniform():
+    return 30*np.e**(np.random.rand(1000)*np.log(240/30))
+
+def uniform():
+    return uniform.rvs(30, scale=210,size=1000, random_state=42)
 
 def generate_dataset(dataset_name, dataset_type, theta):
     if dataset_type == "gtzan":
