@@ -1,11 +1,5 @@
-import os
-import random
-
-import h5py
-
-import steme.audio
-import steme.dataset
-import steme.loader
+import steme.audio as audio
+import steme.dataset as dataset
 from steme.paths import *
 
 
@@ -16,7 +10,11 @@ def main(dataset_name, dataset_type, synthetic, tmin, bins_per_octave, n_bins,
                                          n_bins=n_bins)
 
     if not synthetic:
-        dataset.generate_dataset(dataset_name, dataset_type, theta)
+        dataset.generate_dataset(
+            dataset_name=dataset_name,
+            dataset_type=dataset_type,
+            theta=theta,
+            t_type=t_type)
     else:
         dataset.generate_synthetic_dataset(
             dataset_name=dataset_name,

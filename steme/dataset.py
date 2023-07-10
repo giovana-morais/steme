@@ -115,6 +115,34 @@ def ballroom_data():
     tracks = [i for i in ballroom.track_ids]
     return ballroom, tracks, tempi
 
+def gtzan_augmented_data():
+    gtzan_augmented = loader.custom_dataset_loader(
+        path=paths.DATASET_FOLDER,
+        dataset_name="gtzan_augmented",
+        folder="",
+    )
+
+    tracks = gtzan_augmented.track_ids
+    tracks.remove("reggae.00086")
+    tempi = [gtzan_augmented.track(track_id).tempo for track_id
+            in tracks]
+
+    return gtzan_augmented, tracks, tempi
+
+
+def gtzan_augmented_log_data():
+    gtzan_augmented = loader.custom_dataset_loader(
+        path=paths.DATASET_FOLDER,
+        dataset_name="gtzan_augmented_log",
+        folder="",
+    )
+
+    tracks = gtzan_augmented.track_ids
+    tracks.remove("reggae.00086")
+    tempi = [gtzan_augmented.track(track_id).tempo for track_id
+            in tracks]
+
+    return gtzan_augmented, tracks, tempi
 
 def brid_data():
     brid = loader.custom_dataset_loader(
@@ -272,9 +300,13 @@ def log_uniform():
 def uniform():
     return uniform.rvs(30, scale=210,size=1000, random_state=42)
 
-def generate_dataset(dataset_name, dataset_type, theta):
+def generate_dataset(dataset_name, dataset_type, theta, t_type):
     if dataset_type == "gtzan":
         gtzan, tracks, tempi = gtzan_data()
+    elif dataset_type == "gtzan_augmented":
+        gtzan, tracks, tempi = gtzan_augmented_data()
+    elif dataset_type == "gtzan_augmented_log":
+        gtzan, tracks, tempi = gtzan_augmented_log_data()
     elif dataset_type == "giant_steps":
         gs, tracks, tempi = giant_steps_data()
     elif dataset_type == "ballroom":
@@ -315,7 +347,7 @@ def generate_dataset(dataset_name, dataset_type, theta):
                     x, sr = gtzan.track(track_id).audio
 
                 T, t, bpm = audio.tempogram(
-                    x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
+                    x, sr, window_size_seconds=10, t_type=t_type, theta=theta)
 
                 hf.create_dataset(str(track_id), data=T)
 

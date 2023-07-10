@@ -7,3 +7,6 @@ steme.egg-info/
 # ignoring generated images
 *.png
 *.svg
+
+# ignoring .sbatch files
+jobs/
