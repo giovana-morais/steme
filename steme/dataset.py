@@ -338,8 +338,8 @@ def generate_dataset(dataset_name, dataset_type, theta, t_type):
     tmax = max(tempi)
 
     print(f"Generating tempogram files: {main_file}.h5")
-    if not os.path.isfile(f"data/{main_file}.h5"):
-        with h5py.File(f"data/{main_file}.h5", "w") as hf:
+    if not os.path.isfile(main_filepath):
+        with h5py.File(main_filepath, "w") as hf:
             for track_id in tracks:
                 if "LOFI" in track_id:
                     x, sr = gs.track(track_id).audio
