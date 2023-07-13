@@ -22,7 +22,7 @@ def plot_calibration(tracks, predictions, filename):
 
     # fig.suptitle(model_name, fontsize=16)
 
-    plt.savefig(f"../data/{filename}_synthetic.png")
+    plt.savefig(os.path.join(paths.FIG_FOLDER, f"{filename}_synthetic.png"))
 
     return fig, ax
 
