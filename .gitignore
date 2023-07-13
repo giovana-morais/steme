@@ -1,7 +1,8 @@
+# ignoring installation files
 steme.egg-info/
 
+# ignoring caches
 */*__pycache__
-
 */.ipynb_checkpoints/
 
 # ignoring generated images
@@ -10,3 +11,7 @@ steme.egg-info/
 
 # ignoring .sbatch files
 jobs/
+
+# models and data content
+data/*
+models/*
