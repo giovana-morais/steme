@@ -75,7 +75,7 @@ def gtzan_data():
         "gtzan_genre",
         data_home=os.path.join(
             paths.DATASET_FOLDER,
-            "mir_datasets/gtzan_genre"),
+            "gtzan_genre"),
         version="default")
     tracks = gtzan.track_ids
 
@@ -115,6 +115,34 @@ def ballroom_data():
     tracks = [i for i in ballroom.track_ids]
     return ballroom, tracks, tempi
 
+def gtzan_augmented_data():
+    gtzan_augmented = loader.custom_dataset_loader(
+        path=paths.DATASET_FOLDER,
+        dataset_name="gtzan_augmented",
+        folder="",
+    )
+
+    tracks = gtzan_augmented.track_ids
+    tracks.remove("reggae.00086")
+    tempi = [gtzan_augmented.track(track_id).tempo for track_id
+            in tracks]
+
+    return gtzan_augmented, tracks, tempi
+
+
+def gtzan_augmented_log_data():
+    gtzan_augmented = loader.custom_dataset_loader(
+        path=paths.DATASET_FOLDER,
+        dataset_name="gtzan_augmented_log",
+        folder="",
+    )
+
+    tracks = gtzan_augmented.track_ids
+    tracks.remove("reggae.00086")
+    tempi = [gtzan_augmented.track(track_id).tempo for track_id
+            in tracks]
+
+    return gtzan_augmented, tracks, tempi
 
 def brid_data():
     brid = loader.custom_dataset_loader(
@@ -221,7 +249,7 @@ def generate_synthetic_dataset(
     tmax = max(keys)
 
     print("Generating biased files")
-    if not os.path.isfile(f"data/{main_file}.h5"):
+    if not os.path.isfile(main_filepath):
         generate_biased_data(main_file, dist_counter, theta, t_type)
         random.shuffle(keys)
 
@@ -257,10 +285,28 @@ def generate_synthetic_dataset(
 
     return response
 
+def lognormal70():
+    return lognorm.rvs(0.25, loc=30, scale=50, size=1000, random_state=42)
 
-def generate_dataset(dataset_name, dataset_type, theta):
+def lognormal150():
+    return lognorm.rvs(0.25, loc=70, scale=50, size=1000, random_state=42)
+
+def lognormal170():
+    return lognorm.rvs(0.25, loc=120, scale=50, size=1000, random_state=42)
+
+def log_uniform():
+    return 30*np.e**(np.random.rand(1000)*np.log(240/30))
+
+def uniform():
+    return uniform.rvs(30, scale=210,size=1000, random_state=42)
+
+def generate_dataset(dataset_name, dataset_type, theta, t_type):
     if dataset_type == "gtzan":
         gtzan, tracks, tempi = gtzan_data()
+    elif dataset_type == "gtzan_augmented":
+        gtzan, tracks, tempi = gtzan_augmented_data()
+    elif dataset_type == "gtzan_augmented_log":
+        gtzan, tracks, tempi = gtzan_augmented_log_data()
     elif dataset_type == "giant_steps":
         gs, tracks, tempi = giant_steps_data()
     elif dataset_type == "ballroom":
@@ -292,8 +338,8 @@ def generate_dataset(dataset_name, dataset_type, theta):
     tmax = max(tempi)
 
     print(f"Generating tempogram files: {main_file}.h5")
-    if not os.path.isfile(f"data/{main_file}.h5"):
-        with h5py.File(f"data/{main_file}.h5", "w") as hf:
+    if not os.path.isfile(main_filepath):
+        with h5py.File(main_filepath, "w") as hf:
             for track_id in tracks:
                 if "LOFI" in track_id:
                     x, sr = gs.track(track_id).audio
@@ -301,7 +347,7 @@ def generate_dataset(dataset_name, dataset_type, theta):
                     x, sr = gtzan.track(track_id).audio
 
                 T, t, bpm = audio.tempogram(
-                    x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
+                    x, sr, window_size_seconds=10, t_type=t_type, theta=theta)
 
                 hf.create_dataset(str(track_id), data=T)
 
