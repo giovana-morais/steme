@@ -8,7 +8,7 @@ import tensorboard
 import tensorflow as tf
 
 import steme.dataset as dt
-import steme.models
+import steme.models as models
 from steme.paths import *
 
 LEARNING_RATE = 10e-4
