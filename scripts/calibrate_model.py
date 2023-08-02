@@ -1,7 +1,13 @@
 import os
+import pickle
+import random
+
+import h5py
+import numpy as np
+import tensorflow as tf
 
 import steme.audio as audio
-import steme.dataset as data
+import steme.dataset as dataset
 import steme.calibration as calibration
 
 def default_variables():
@@ -12,22 +18,40 @@ def default_variables():
             "kmin": 11,
             "kmax": 19
     }
+def read_dataset_info(main_file):
+    dataset_metadata = os.path.join("/home/gigibs/Documents/steme/data", f"{main_file}_metadata.h5")
+    print(f"Reading metadata file {dataset_metadata}")
+    response = {}
 
+    with h5py.File(dataset_metadata, "r") as hf:
+        response["main_file"] = hf.get("main_file")[()].decode("UTF-8")
+        response["validation_file"] = hf.get("validation_file")[()].decode("UTF-8")
+        response["train_file"] = hf.get("train_file")[()].decode("UTF-8")
+        response["main_filepath"] = hf.get("main_filepath")[()].decode("UTF-8")
+        response["validation_filepath"] = hf.get("validation_filepath")[()].decode("UTF-8")
+        response["train_filepath"] = hf.get("train_filepath")[()].decode("UTF-8")
+        response["distribution"] = hf.get("distribution")[:]
+        response["validation_setsize"] = hf.get("validation_setsize")[()]
+        response["train_setsize"] = hf.get("train_setsize")[()]
+        response["tmin"] = hf.get("tmin")[()]
+        response["tmax"] = hf.get("tmax")[()]
 
-def get_center_bins(step, offset):
-	# defining the center bins for the random tracks in calibration
-	# step = 5
-	# offset = 5
-	left = theta[(theta > 30) & (theta < 350)][::step]
-	center = theta[(theta > 30) & (theta < 350)][offset::step]
-	right = theta[(theta > 30) & (theta < 350)][offset::step]
+    return response
 
-	bins = []
-	for i, j, k in zip(left, center, right):
-		print(f"boundaries for {np.round(j,2)}: [{np.round(np.sqrt(i*j),2)}, {np.round(np.sqrt(j*k))}]")
-		bins.append(i)
-		bins.append(j)
-    return bins
+# def get_center_bins(step, offset):
+# 	# defining the center bins for the random tracks in calibration
+# 	# step = 5
+# 	# offset = 5
+# 	left = theta[(theta > 30) & (theta < 350)][::step]
+# 	center = theta[(theta > 30) & (theta < 350)][offset::step]
+# 	right = theta[(theta > 30) & (theta < 350)][offset::step]
+
+# 	bins = []
+# 	for i, j, k in zip(left, center, right):
+# 		print(f"boundaries for {np.round(j,2)}: [{np.round(np.sqrt(i*j),2)}, {np.round(np.sqrt(j*k))}]")
+# 		bins.append(i)
+# 		bins.append(j)
+#     return bins
 
 def create_center_dict(n_predictions, tracks_per_bin):
 	# n_predictions = 2
@@ -41,7 +65,7 @@ def create_center_dict(n_predictions, tracks_per_bin):
 		center_dict[val] = np.random.uniform(left_boundary, right_boundary, size=tracks_per_bin)
 	return center_dict
 
-def calibration_results(dists, t_types, variation):
+def calibration_results(dists, t_types, variation, n_predictions):
     results_dict = {}
     for dist_name in dists:
         results_dict[dist_name] = {}
@@ -91,19 +115,23 @@ def calibration_results(dists, t_types, variation):
 
 
 if __name__ == "__main__":
-	variables = default_variables()
-	tmin = variables["tmin"]
-	n_bins = variables["n_bins"]
-	bins_per_octave = variables["bins_per_octave"]
-	kmin, kmax = variables["kmin"], variables["kmax"]
-	theta = dataset.variables_non_linear(tmin, n_bins=n_bins, bins_per_octave=bins_per_octave)
+    variables = default_variables()
+    tmin = variables["tmin"]
+    n_bins = variables["n_bins"]
+    bins_per_octave = variables["bins_per_octave"]
+    kmin, kmax = variables["kmin"], variables["kmax"]
+    theta = dataset.variables_non_linear(tmin, n_bins=n_bins, bins_per_octave=bins_per_octave)
 
-    bins = get_center_bins(5, 5)
-
+    step = 5
+    offset = 5
+    left = theta[(theta > 30) & (theta < 350)][::step]
+    center = theta[(theta > 30) & (theta < 350)][offset::step]
+    right = theta[(theta > 30) & (theta < 350)][offset::step]
+    # bins = get_center_bins(5, 5)
 
     dists = [
-            "gtzan_augmented_log_25_190_40"
-            "gtzan_augmented_log_cropped_25_190_40"
+            "gtzan_augmented_log_25_190_40",
+            "gtzan_augmented_log_cropped_25_190_40",
             "log_uniform_25_190_40",
             "synthetic_lognorm_0.7_30_50_1000_25_190_40",
             "synthetic_lognorm_0.7_70_50_1000_25_190_40",
@@ -114,12 +142,14 @@ if __name__ == "__main__":
     t_types = ["fourier", "autocorrelation", "hybrid"]
 
     variations = ["early_stopping", "wo_early_stopping"]
+    n_predictions = 1
+    tracks_per_bin = 1
 
-	center_dict = create_center_dict(2, 50)
-	with open('center_dict_aug_full.pkl', 'wb') as f:
-		pickle.dump(center_dict, f)
+    center_dict = create_center_dict(n_predictions, tracks_per_bin)
+    with open('center_dict_aug_full.pkl', 'wb') as f:
+        pickle.dump(center_dict, f)
 
-	for v in variations:
-		results_dict = calibration_results(dists, t_types, v)
-		with open(f'results_dict_aug_{variation}.pkl', 'wb') as f:
-			pickle.dump(results_dict, f)
+    for v in variations:
+        results_dict = calibration_results(dists, t_types, v, n_predictions)
+        with open(f'results_dict_aug_{variation}.pkl', 'wb') as f:
+            pickle.dump(results_dict, f)
