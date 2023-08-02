@@ -1,8 +1,11 @@
 # steme
 Self supervised TEMpo Estimation
 
-Source code for the paper "Tempo vs. Pitch: understanding self-supervised tempo
-estimation".
+Source code for the paper ["Tempo vs. Pitch: understanding self-supervised tempo
+estimation"](https://arxiv.org/abs/2304.06868).
+
+![steme_workflow](https://github.com/giovana-morais/steme/assets/12520431/0ce4c9dc-f2eb-4749-a113-e79759712ae9)
+
 
 ## Installation from the source
 
