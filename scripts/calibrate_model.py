@@ -1,281 +1,125 @@
-# -*- coding: utf-8 -*-
 import os
-import random
 
-import h5py
-import numpy as np
-import pandas as pd
-import tensorflow as tf
+import steme.audio as audio
+import steme.dataset as data
+import steme.calibration as calibration
 
-import steme.audio
-import steme.dataset as dt
-import steme.loader
-import steme.metrics
-import steme.utils
-from steme.paths import *
-
-
-def calibrate_model_synthetic(model, kmin, kmax, theta, n_predictions):
-    print("Creating tracks for calibration")
-    bpm_tracks = create_calibration_tracks(theta, 10)
-    bpm_dict = {}
-
-    for bpm in bpm_tracks:
-        sr = 22050
-        x = audio.click_track(bpm=bpm, sr=sr)
-        T, t, bpms = audio.tempogram(
-            x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
-
-        bpm_dict[bpm] = {}
-        bpm_dict[bpm]["audio"] = x
-        bpm_dict[bpm]["T"] = T
-        bpm_dict[bpm]["t"] = t
-        bpm_dict[bpm]["freqs"] = bpms
-
-    bpm_dict, a, b, quad = _calibrate(
-        bpm_dict=bpm_dict, model=model, kmin=kmin, kmax=kmax, n_predictions=n_predictions)
-
-    return bpm_dict, bpm_tracks, a, b, quad
+def default_variables():
+    return {
+            "tmin": 25,
+            "n_bins": 190,
+            "bins_per_octave": 40,
+            "kmin": 11,
+            "kmax": 19
+    }
 
 
-def calibrate_model_non_synthetic(model, kmin, kmax, theta, mirdata_dataset,
-                                  n_predictions=100, interval=None):
-    tempi = [mirdata_dataset.track(i).tempo for i in mirdata_dataset.track_ids]
-    track = [i for i in mirdata_dataset.track_ids]
-    tracks = []
-    bpm_tracks = []
+def get_center_bins(step, offset):
+	# defining the center bins for the random tracks in calibration
+	# step = 5
+	# offset = 5
+	left = theta[(theta > 30) & (theta < 350)][::step]
+	center = theta[(theta > 30) & (theta < 350)][offset::step]
+	right = theta[(theta > 30) & (theta < 350)][offset::step]
 
-    if mirdata_dataset.name == "gtzan_genre":
-        try:
-            tempi.remove(None)
-            track.remove("reggae.00086")
-        except Exception as e:
-            print(e)
+	bins = []
+	for i, j, k in zip(left, center, right):
+		print(f"boundaries for {np.round(j,2)}: [{np.round(np.sqrt(i*j),2)}, {np.round(np.sqrt(j*k))}]")
+		bins.append(i)
+		bins.append(j)
+    return bins
 
-    tempi = np.array(tempi)
-    track = np.array(track)
+def create_center_dict(n_predictions, tracks_per_bin):
+	# n_predictions = 2
+	# tracks_per_bin = 50
 
-    ordered_indexes = np.argsort(tempi)
-    tempi = tempi[ordered_indexes]
-    track = track[ordered_indexes]
+	center_dict = {}
+	for idx, val in enumerate(center):
+		left_boundary = np.sqrt(left[idx]*center[idx])
+		right_boundary = np.sqrt(center[idx]*right[idx])
 
-    track_dict = {i: j for i, j in zip(tempi, track)}
+		center_dict[val] = np.random.uniform(left_boundary, right_boundary, size=tracks_per_bin)
+	return center_dict
 
-    if interval is None:
-        intervals = np.arange(30, 350, 10)
-    else:
-        intervals = interval
+def calibration_results(dists, t_types, variation):
+    results_dict = {}
+    for dist_name in dists:
+        results_dict[dist_name] = {}
+        for t_type in t_types:
+            print(dist_name, t_type)
+            dataset_name = f"{dist_name}_{t_type}"
 
-    bpm_dict = {}
+            response = read_dataset_info(dataset_name)
+            distribution = response["distribution"]
 
-    print("Sampling tracks for calibration")
-    for idx in range(len(intervals) - 1):
-        try:
-            interval = tempi[(tempi > intervals[idx]) &
-                             (tempi < intervals[idx + 1])]
-            bpm = random.choice(interval)
-            bpm_dict[bpm] = {}
-            x, sr = mirdata_dataset.track(track_dict[bpm]).audio
-            T, t, bpms = audio.tempogram(
-                x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
+            results_dict[dist_name][t_type] = {}
 
-            bpm_dict[bpm]["audio"] = x
-            bpm_dict[bpm]["T"] = T
-            bpm_dict[bpm]["t"] = t
-            bpm_dict[bpm]["freqs"] = bpms
+            model_name = f"{dataset_name}_15_default"
+            model_path = f"../models/{variation}/{model_name}"
 
-            print(
-                f"interval [{intervals[idx]}, {intervals[idx+1]}]: {track_dict[bpm]}")
-            tracks.append(track_dict[bpm])
-            bpm_tracks.append(bpm)
-        except IndexError:
-            print(
-                f"no index for interval [{intervals[idx]}, {intervals[idx+1]}]")
+            model = tf.keras.models.load_model(model_path)
 
-    bpm_dict, a, b, quad = _calibrate(
-        bpm_dict=bpm_dict, model=model, kmin=kmin, kmax=kmax, n_predictions=n_predictions)
+            for idx, val in enumerate(center):
+                results_dict[dist_name][t_type][val] = {}
+                sr = 22050
+                preds = np.zeros(n_predictions*tracks_per_bin)
 
-    return bpm_dict, bpm_tracks, a, b, quad
+                j = 0
 
+                for bpm in center_dict[val]:
+                    x = audio.click_track(bpm=bpm, sr=sr)
+                    T, t, bpms = audio.tempogram(x, sr, window_size_seconds=10, t_type=t_type, theta=theta)
 
-def evaluate_model(ballroom, evaluation_file, model):
-    print("Evaluating model")
-    if not os.path.isfile(evaluation_file):
-        print(f"Generating {evaluation_file}")
-        with h5py.File(evaluation_file, "a") as whf:
-            for track_id in ballroom.track_ids:
-                print(track_id)
-                predictions = []
+                    step = T.shape[1]//n_predictions
 
-                theta = dt.variables_non_linear()
-                x, sr = ballroom.track(track_id).audio
-                T, t, freqs = audio.tempogram(
-                    x, sr, window_size_seconds=10, t_type="hybrid", theta=theta)
-                reference_tempo = ballroom.track(track_id).tempo
+                    for i in range(n_predictions):
+                        slice_idx = i*step
+                        s1, sh1, s2, sh2, _ = dataset.get_tempogram_slices(
+                            T=T, kmin=kmin, kmax=kmax, shift_1=0, shift_2=0, slice_idx=slice_idx
+                        )
 
-                for i in range(T.shape[1]):
-                    s1, sh1, s2, sh2, _ = dt.get_tempogram_slices(
-                        T, slice_idx=i, kmin=11, kmax=19)
+                        s1 = s1[np.newaxis, :]
 
-                    s1 = s1[np.newaxis, :]
+                        xhat1, xhat2, y1, y2 = model.predict([s1, s1, sh1, sh1], verbose=0)
+                        preds[j] = y1[0][0]
+                        j += 1
+                results_dict[dist_name][t_type][val]["predictions"] = np.array(preds)
+#                 results_dict[dist_name][t_type][val]["tracks"] = bpm_tracks
 
-                    xhat1, xhat2, y1, y2 = model.predict(
-                        [s1, s1, sh1, sh1], verbose=0)
-                    predictions.append(y1[0][0])
-
-                predicted_tempo_linear = np.array(predictions) * a + b
-                predicted_tempo_quadratic = quad(np.array(predictions))
-                baseline_tempo = np.take(freqs, np.argmax(T, axis=-2))
-
-                g = whf.create_group(track_id)
-                g["reference_tempo"] = reference_tempo
-                g["model_output"] = predictions
-                # g["predicted_tempo_linear"] = predicted_tempo_linear
-                # g["predicted_tempo_quadratic"] = predicted_tempo_quadratic
-                g["baseline_tempo"] = baseline_tempo
-                g["T"] = T.copy()
-                g["t"] = t
-                g["freqs"] = freqs
-    else:
-        print(f"{evaluation_file} already exists")
-
-    return
-
-
-def get_metrics(evaluation_file):
-    print(f"Generating metrics for {evaluation_file}")
-    baseline_metrics = {}
-    predicted_metrics = {}
-
-    print(f"{evaluation_file}")
-
-    with h5py.File(f"{evaluation_file}", "r") as hf:
-        for key, value in hf.items():
-            baseline_tempo = value["baseline_tempo"][:]
-            reference_tempo = value["reference_tempo"][()]
-            predicted_tempo_linear = value["predicted_tempo_linear"][:]
-            T = value["T"][:]
-            t = value["t"][:]
-            freqs = value["freqs"][:]
-
-            baseline_acc1 = metrics.acc1(
-                reference_tempo, np.median(baseline_tempo))
-            baseline_acc2 = metrics.acc2(
-                reference_tempo, np.median(baseline_tempo))
-
-            predicted_acc1 = metrics.acc1(
-                reference_tempo, np.median(predicted_tempo_linear))
-            predicted_acc2 = metrics.acc2(
-                reference_tempo, np.median(predicted_tempo_linear))
-
-            baseline_metrics[key] = {}
-            baseline_metrics[key]["reference_tempo"] = reference_tempo
-            baseline_metrics[key]["acc1"] = baseline_acc1
-            baseline_metrics[key]["acc2"] = baseline_acc2
-
-            predicted_metrics[key] = {}
-            predicted_metrics[key]["acc1"] = predicted_acc1
-            predicted_metrics[key]["acc2"] = predicted_acc2
-
-    baseline_df = pd.DataFrame.from_dict(baseline_metrics, orient="index")
-    predicted_df = pd.DataFrame.from_dict(predicted_metrics, orient="index")
-
-    df = baseline_df.merge(
-        predicted_df,
-        left_index=True, right_index=True,
-        suffixes=("_baseline", "_predicted")
-    )
-
-    df["acc1_baseline"] = df["acc1_baseline"].astype(float)
-    df["acc1_predicted"] = df["acc1_predicted"].astype(float)
-    df["acc2_baseline"] = df["acc2_baseline"].astype(float)
-    df["acc2_predicted"] = df["acc2_predicted"].astype(float)
-
-    print("saving .csv file")
-    print(df.sample(5))
-    print(f"{evaluation_file}.csv =====================")
-    df.to_csv(f"{evaluation_file}.csv")
-
-    return
-
-
-def main(
-        model_name,
-        dataset_name,
-        dataset_type,
-        synthetic,
-        n_predictions,
-        kmin,
-        kmax,
-        tmin,
-        n_bins,
-        bins_per_octave,
-        **kwargs):
-
-    theta = dt.variables_non_linear(tmin, bins_per_octave, n_bins)
-
-    response = dt.read_dataset_info(dataset_name)
-
-    main_file = response["main_file"]
-    train_file = response["train_file"]
-    validation_file = response["validation_file"]
-    main_filepath = response["main_filepath"]
-    train_filepath = response["train_filepath"]
-    validation_filepath = response["validation_filepath"]
-
-    tmin = response["tmin"]
-    tmax = response["tmax"]
-    distribution = response["distribution"]
-
-    model_path = os.path.join(MODEL_FOLDER, model_name)
-    model = tf.keras.models.load_model(model_path)
-
-    # calibration on synthetic data
-    synth_main_file = f"{model_name}_synth_data"
-    bpm_dict_synth, bpm_tracks_synth, a_synth, b_synth, quad_synth = calibrate_model_synthetic(
-        model, kmin, kmax, theta, n_predictions)
-    utils.plot_reconstructions(
-        bpm_tracks_synth,
-        bpm_dict_synth,
-        synth_main_file,
-        theta)
-    bpm_preds_synth = [v["predictions"] for k, v in bpm_dict_synth.items()]
-    utils.plot_calibration(
-        bpm_tracks_synth,
-        bpm_preds_synth,
-        distribution,
-        synth_main_file)
-
-    # calibration on ballroom data
-    ballroom_main_file = f"{model_name}_ballroom_data"
-    ballroom = loader.custom_dataset_loader(
-        path=DATASET_FOLDER, dataset_name="ballroom", folder="")
-    bpm_dict, bpm_tracks, a, b, quad = calibrate_model_non_synthetic(
-        model, kmin, kmax, theta, ballroom, n_predictions=n_predictions)
-    utils.plot_reconstructions(bpm_tracks, bpm_dict, ballroom_main_file, theta)
-    bpm_preds = [v["predictions"] for k, v in bpm_dict.items()]
-    utils.plot_calibration(
-        bpm_tracks,
-        bpm_preds,
-        distribution,
-        ballroom_main_file)
-
-    # calibration on gtzan data
-    # gtzan_main_file = f"{model_name}_gtzan_data"
-    # gtzan, tracks, tempi = dt.gtzan_data()
-    # bpm_dict_gtzan, bpm_tracks_gtzan, a_gtzan, b_gtzan, quad_gtzan = calibrate_model_non_synthetic(model, kmin, kmax,
-    #         theta, gtzan, n_predictions=n_predictions,
-    #         interval=np.arange(90,190,5))
-    # utils.plot_reconstructions(bpm_tracks_gtzan, bpm_dict_gtzan, gtzan_main_file, theta)
-    # bpm_preds_gtzan = [v["predictions"] for k, v in bpm_dict_gtzan.items()]
-    # utils.plot_calibration(bpm_tracks_gtzan, bpm_preds_gtzan, tempi, gtzan_main_file)
-
-    # evaluate on ballroom
-    # get_metrics(evaluation_file)
-
-    return
+            del model
+        return results_dict
 
 
 if __name__ == "__main__":
-    import fire
-    fire.Fire(main)
+	variables = default_variables()
+	tmin = variables["tmin"]
+	n_bins = variables["n_bins"]
+	bins_per_octave = variables["bins_per_octave"]
+	kmin, kmax = variables["kmin"], variables["kmax"]
+	theta = dataset.variables_non_linear(tmin, n_bins=n_bins, bins_per_octave=bins_per_octave)
+
+    bins = get_center_bins(5, 5)
+
+
+    dists = [
+            "gtzan_augmented_log_25_190_40"
+            "gtzan_augmented_log_cropped_25_190_40"
+            "log_uniform_25_190_40",
+            "synthetic_lognorm_0.7_30_50_1000_25_190_40",
+            "synthetic_lognorm_0.7_70_50_1000_25_190_40",
+            "synthetic_lognorm_0.7_120_50_1000_25_190_40",
+            "gtzan_25_190_40"
+    ]
+
+    t_types = ["fourier", "autocorrelation", "hybrid"]
+
+    variations = ["early_stopping", "wo_early_stopping"]
+
+	center_dict = create_center_dict(2, 50)
+	with open('center_dict_aug_full.pkl', 'wb') as f:
+		pickle.dump(center_dict, f)
+
+	for v in variations:
+		results_dict = calibration_results(dists, t_types, v)
+		with open(f'results_dict_aug_{variation}.pkl', 'wb') as f:
+			pickle.dump(results_dict, f)
