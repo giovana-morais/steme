@@ -78,15 +78,6 @@ def main(model_name, epochs, early_stopping, main_file,
 
     sigma = dt.sigma(training_tmin, training_tmax, bins_per_octave)
 
-    if sigma_type == "10e-1":
-        sigma *= 100
-    elif sigma_type == "10e-2":
-        sigma *= 10
-    elif sigma_type == "10e-4":
-        sigma /= 10
-    elif sigma_type == "diff":
-        sigma = 1 / (training_tmax - training_tmin)
-
     print(f"sigma = {sigma}")
 
     if model_type == "spice":
