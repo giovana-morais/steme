@@ -5,7 +5,7 @@ from collections import Counter
 import h5py
 import numpy as np
 import mirdata
-from scipy.stats import tukeylambda, lognorm, uniform
+from scipy.stats import tukeylambda, lognorm, uniform as st_uniform
 
 import steme.audio as audio
 import steme.loader as loader
@@ -144,6 +144,20 @@ def gtzan_augmented_log_data():
 
     return gtzan_augmented, tracks, tempi
 
+def gtzan_augmented_log_cropped_data():
+    gtzan_augmented = loader.custom_dataset_loader(
+        path=paths.DATASET_FOLDER,
+        dataset_name="gtzan_augmented_log_cropped",
+        folder="",
+    )
+
+    tracks = gtzan_augmented.track_ids
+    tracks.remove("reggae.00086")
+    tempi = [gtzan_augmented.track(track_id).tempo for track_id
+            in tracks]
+
+    return gtzan_augmented, tracks, tempi
+
 def brid_data():
     brid = loader.custom_dataset_loader(
         path=paths.DATASET_FOLDER,
@@ -219,7 +233,7 @@ def generate_synthetic_dataset(
             size=size,
             random_state=42)
     elif dataset_type == "uniform":
-        dist = uniform.rvs(loc=loc, scale=scale, size=1000, random_state=42)
+        dist = st_uniform.rvs(loc=loc, scale=scale, size=1000, random_state=42)
     elif dataset_type == "gtzan_synthetic":
         _, _, dist = gtzan_data()
     elif dataset_type == "log_uniform":
@@ -298,7 +312,7 @@ def log_uniform():
     return 30*np.e**(np.random.rand(1000)*np.log(240/30))
 
 def uniform():
-    return uniform.rvs(30, scale=210,size=1000, random_state=42)
+    return st_uniform.rvs(30, scale=210,size=1000, random_state=42)
 
 def generate_dataset(dataset_name, dataset_type, theta, t_type):
     if dataset_type == "gtzan":
@@ -307,6 +321,8 @@ def generate_dataset(dataset_name, dataset_type, theta, t_type):
         gtzan, tracks, tempi = gtzan_augmented_data()
     elif dataset_type == "gtzan_augmented_log":
         gtzan, tracks, tempi = gtzan_augmented_log_data()
+    elif dataset_type == "gtzan_augmented_log_cropped":
+        gtzan, tracks, tempi = gtzan_augmented_log_cropped_data()
     elif dataset_type == "giant_steps":
         gs, tracks, tempi = giant_steps_data()
     elif dataset_type == "ballroom":
