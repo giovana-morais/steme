@@ -96,7 +96,7 @@ def calibration_synthetic(
         bpm_dict[bpm]["freqs"] = bpms
 
     bpm_dict, a, b, _ = _calibrate(
-        bpm_dict, model, kmin, kmax, n_predictions, fixed=True
+        bpm_dict, model, kmin, kmax, n_predictions
     )
     bpm_preds = [
         v["predictions"] for k, v in bpm_dict.items()
@@ -106,7 +106,7 @@ def calibration_synthetic(
     return bpm_preds
 
 
-def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100, fixed=False):
+def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100):
     print("Calibrating model")
     model_output = np.zeros(len(bpm_dict.keys()))
     j = 0
@@ -118,15 +118,10 @@ def _calibrate(bpm_dict, model, kmin, kmax, n_predictions=100, fixed=False):
 
         for i in range(n_predictions):
             slice_idx = i * step
-            if fixed:
-                s1, sh1, s2, sh2, _ = dataset.get_tempogram_slices(
-                    T=T, kmin=kmin, kmax=kmax, shift_1=0, shift_2=0, slice_idx=slice_idx)
-            else:
-                s1, sh1, s2, sh2, _ = dataset.get_tempogram_slices(
-                    T=T, kmin=kmin, kmax=kmax, slice_idx=slice_idx
-                )
+            s1, sh1, s2, sh2, _ = dataset.get_tempogram_slices(
+                T=T, kmin=kmin, kmax=kmax, shift_1=0, shift_2=0, slice_idx=slice_idx)
             s1 = s1[np.newaxis, :]
-            s2 = s2[np.newaxis, :]
+            # s2 = s2[np.newaxis, :]
 
             # xhat1, xhat2, y1, y2 = model.predict([s1, s2, sh1, sh2], verbose=0)
             xhat1, xhat2, y1, y2 = model.predict([s1, s1, sh1, sh1], verbose=0)
